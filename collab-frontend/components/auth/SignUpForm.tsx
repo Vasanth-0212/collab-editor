@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { registerUser } from "@/actions/auth";
 
 interface Props {
@@ -10,7 +8,6 @@ interface Props {
 }
 
 export default function SignUpForm({ onSwitch }: Props) {
-  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,26 +22,15 @@ export default function SignUpForm({ onSwitch }: Props) {
     // 1. Register via backend
     const result = await registerUser({ name, email, password });
 
+    setLoading(false);
+
     if (!result.success) {
       setError(result.message);
-      setLoading(false);
       return;
     }
 
-    // 2. Auto sign-in after successful registration
-    const signInResult = await signIn("credentials", {
-      redirect: false,
-      email,
-      password,
-    });
-
-    setLoading(false);
-
-    if (signInResult?.error) {
-      setError("Registered but could not sign in. Please log in manually.");
-    } else {
-      router.refresh();
-    }
+    // Switch to login tab so user signs in manually
+    onSwitch();
   };
 
   return (

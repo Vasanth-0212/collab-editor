@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 interface Props {
   onSwitch: () => void;
@@ -14,6 +15,7 @@ export default function LoginForm({ onSwitch }: Props) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const pathname = usePathname();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +33,10 @@ export default function LoginForm({ onSwitch }: Props) {
     if (result?.error) {
       setError("Invalid email or password");
     } else {
-      router.refresh();
+      if(pathname === '/'){
+        const slug = Math.random().toString(36).slice(2, 10); // e.g. "k7x2mq9a"
+        router.push(`/${slug}`);
+      }
     }
   };
 
@@ -66,7 +71,7 @@ export default function LoginForm({ onSwitch }: Props) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-blue-600 text-white font-medium py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition text-sm"
+        className="w-full cursor-pointer bg-blue-600 text-white font-medium py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition text-sm"
       >
         {loading ? "Signing in…" : "Sign In"}
       </button>

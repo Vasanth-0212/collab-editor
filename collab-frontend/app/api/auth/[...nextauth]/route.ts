@@ -48,12 +48,38 @@ export const authOptions: NextAuthOptions = {
   pages: { signIn: "/" },
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
+    // Fires after every successful sign-in.
+    // For Google, upsert the user into our DB before the session is created.
+    async signIn({ user, account, profile }) {
+      if (account?.provider === "google") {
+        try {
+          const res = await fetch(`${BACKEND_URL}/api/auth/google`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: user.name,
+              email: user.email,
+              googleId: account.providerAccountId,
+              avatarUrl: profile?.image ?? user.image ?? null,
+            }),
+          });
+
+          if (!res.ok) return false; // block sign-in if DB upsert fails
+        } catch {
+          return false;
+        }
+      }
+
+      return true; // allow sign-in for credentials provider
+    },
+
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
       }
       return token;
     },
+
     async session({ session, token }) {
       if (session.user && token.id) {
         (session.user as { id?: string }).id = token.id as string;

@@ -77,3 +77,40 @@ export const login = async (req: Request, res: Response) => {
     return res.status(500).json({ success: false, message: "Something went wrong" });
   }
 };
+
+// Called by NextAuth after a successful Google sign-in.
+// Creates the user if they don't exist, or updates their Google profile data.
+export const googleUpsert = async (req: Request, res: Response) => {
+  try {
+    const { name, email, googleId, avatarUrl } = req.body;
+
+    if (!email || !googleId) {
+      return res.status(400).json({ success: false, message: "email and googleId are required" });
+    }
+
+    const user = await User.findOneAndUpdate(
+      { email: email.toLowerCase() },
+      {
+        $set: {
+          name,
+          googleId,
+          avatarUrl: avatarUrl ?? null,
+        },
+        // Only set these on insert — don't overwrite an existing passwordHash
+        $setOnInsert: {
+          email: email.toLowerCase(),
+          passwordHash: null,
+        },
+      },
+      { upsert: true, new: true, runValidators: false }
+    );
+
+    return res.status(200).json({
+      success: true,
+      user: { id: user._id, name: user.name, email: user.email },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: "Something went wrong" });
+  }
+};
